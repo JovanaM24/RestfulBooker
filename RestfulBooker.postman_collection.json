@@ -1,0 +1,604 @@
+{
+	"info": {
+		"_postman_id": "839c4560-e04b-445f-81b0-7a81b83ad743",
+		"name": "RestfulBooker",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "8541852",
+		"_collection_link": "https://crimson-crescent-914142.postman.co/workspace/0b1f8628-5e00-4ab0-8d84-a5451829ce9d/collection/8541852-839c4560-e04b-445f-81b0-7a81b83ad743?action=share&source=collection_link&creator=8541852"
+	},
+	"item": [
+		{
+			"name": "Login with valid credentials",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Successful authentication - token received\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData).to.have.property(\"token\");\r",
+							"    pm.environment.set(\"auth_token\", jsonData.token);\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"username\": \"{{username}}\",\r\n    \"password\": \"{{password}}\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/auth",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"auth"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Login with invalid credentials",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Unsuccessful authentication - invalid credentials\", function () {\r",
+							"    pm.response.to.have.status(401);\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.reason).to.eql(\"Bad credentials\");\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"username\": \"{{wrong_username}}\",\r\n    \"password\": \"{{wrong_password}}\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/auth",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"auth"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create booking",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"let jsonReq = JSON.parse(pm.request.body.raw);\r",
+							"let jsonData = pm.response.json();\r",
+							"\r",
+							"pm.test(\"Booking should be created\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"    pm.expect(jsonData.bookingid).to.exist;\r",
+							"});\r",
+							"\r",
+							"var Ajv = require('ajv');\r",
+							"var ajv = new Ajv();\r",
+							"\r",
+							"const schema = {\r",
+							"    \"type\": \"object\",\r",
+							"    \"required\": [\r",
+							"        \"bookingid\",\r",
+							"        \"booking\"\r",
+							"    ],\r",
+							"    \"properties\": {\r",
+							"        \"bookingid\": {\r",
+							"            \"type\": \"integer\"\r",
+							"        },\r",
+							"        \"booking\": {\r",
+							"            \"type\": \"object\",\r",
+							"            \"required\": [\r",
+							"                \"firstname\",\r",
+							"                \"lastname\",\r",
+							"                \"totalprice\",\r",
+							"                \"depositpaid\",\r",
+							"                \"bookingdates\",\r",
+							"                \"additionalneeds\"\r",
+							"            ],\r",
+							"            \"properties\": {\r",
+							"                \"firstname\": {\r",
+							"                    \"type\": \"string\"\r",
+							"                },\r",
+							"                \"lastname\": {\r",
+							"                    \"type\": \"string\"\r",
+							"                },\r",
+							"                \"totalprice\": {\r",
+							"                    \"type\": \"integer\"\r",
+							"                },\r",
+							"                \"depositpaid\": {\r",
+							"                    \"type\": \"boolean\"\r",
+							"                },\r",
+							"                \"bookingdates\": {\r",
+							"                    \"type\": \"object\",\r",
+							"                    \"required\": [\r",
+							"                        \"checkin\",\r",
+							"                        \"checkout\"\r",
+							"                    ],\r",
+							"                    \"properties\": {\r",
+							"                        \"checkin\": {\r",
+							"                            \"type\": \"string\"\r",
+							"                        },\r",
+							"                        \"checkout\": {\r",
+							"                            \"type\": \"string\"\r",
+							"                        }\r",
+							"                    }\r",
+							"                },\r",
+							"                \"additionalneeds\": {\r",
+							"                    \"type\": \"string\"\r",
+							"                }\r",
+							"            }\r",
+							"        }\r",
+							"    }\r",
+							"};\r",
+							"\r",
+							"pm.test('Schema is valid', function () {\r",
+							"    let validate = ajv.compile(schema);\r",
+							"    let isValid = validate(jsonData);\r",
+							"    pm.expect(isValid, JSON.stringify(validate.errors)).to.be.true;\r",
+							"});\r",
+							"\r",
+							"\r",
+							"pm.environment.set(\"bookingId\", jsonData.bookingid);\r",
+							"pm.environment.set(\"firstName\", jsonReq.firstname);\r",
+							"pm.environment.set(\"lastName\", jsonReq.lastname);\r",
+							"pm.environment.set(\"price\", jsonReq.totalprice);\r",
+							"pm.environment.set(\"checkIn\", jsonReq.bookingdates.checkin);\r",
+							"pm.environment.set(\"checkOut\", jsonReq.bookingdates.checkout);\r",
+							"pm.environment.set(\"additionalNeeds\", jsonReq.additionalneeds);\r",
+							"\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"var moment = require(\"moment\");\r",
+							"pm.environment.set(\"currentDay\", moment().format(\"YYYY-MM-DD\"));\r",
+							"pm.environment.set(\"nextDay\", moment().add(1, 'days').format(\"YYYY-MM-DD\"));\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{authToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"firstname\": \"{{$randomFirstName}}\",\r\n    \"lastname\": \"{{$randomLastName}}\",\r\n    \"totalprice\": {{$randomPrice}},\r\n    \"depositpaid\": true,\r\n    \"bookingdates\": {\r\n        \"checkin\": \"{{currentDay}}\",\r\n        \"checkout\": \"{{nextDay}}\"\r\n    },\r\n    \"additionalneeds\": \"Breakfast\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/booking",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"booking"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get booking",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Booking data should be correct\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"    let jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.firstname).to.eql(pm.environment.get(\"firstName\"));\r",
+							"    pm.expect(jsonData.lastname).to.eql(pm.environment.get(\"lastName\"));\r",
+							"    pm.expect(jsonData.totalprice).to.eql(parseInt(pm.environment.get(\"price\")));\r",
+							"    pm.expect(jsonData.bookingdates.checkin).to.eql(pm.environment.get(\"checkIn\"));\r",
+							"    pm.expect(jsonData.bookingdates.checkout).to.eql(pm.environment.get(\"checkOut\"));\r",
+							"    pm.expect(jsonData.additionalneeds).to.eql(pm.environment.get(\"additionalNeeds\"));\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "{{authToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/booking/{{bookingId}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"booking",
+						"{{bookingId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Edit booking",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Set environment variables\", function () {\r",
+							"    let jsonReq = JSON.parse(pm.request.body.raw); \r",
+							"    pm.environment.set(\"firstName\", jsonReq.firstname); \r",
+							"    pm.environment.set(\"lastName\", jsonReq.lastname);  \r",
+							"});\r",
+							"\r",
+							"// Test to validate the booking update and schema validation\r",
+							"pm.test(\"Booking should be edited\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"\r",
+							"    try {\r",
+							"        let jsonData = pm.response.json();\r",
+							"        pm.expect(jsonData.bookingid).to.exist;  // Validate that bookingId exists\r",
+							"\r",
+							"        let jsonReq = JSON.parse(pm.request.body.raw);\r",
+							"\r",
+							"        var Ajv = require('ajv');  // Import Ajv for JSON schema validation\r",
+							"        var ajv = new Ajv();\r",
+							"\r",
+							"        const schema = {\r",
+							"            \"type\": \"object\",\r",
+							"            \"required\": [\"bookingid\", \"booking\"],\r",
+							"            \"properties\": {\r",
+							"                \"bookingid\": { \"type\": \"integer\" },\r",
+							"                \"booking\": {\r",
+							"                    \"type\": \"object\",\r",
+							"                    \"required\": [\"firstname\", \"lastname\", \"totalprice\", \"depositpaid\", \"bookingdates\", \"additionalneeds\"],\r",
+							"                    \"properties\": {\r",
+							"                        \"firstname\": { \"type\": \"string\" },\r",
+							"                        \"lastname\": { \"type\": \"string\" },\r",
+							"                        \"totalprice\": { \"type\": \"integer\" },\r",
+							"                        \"depositpaid\": { \"type\": \"boolean\" },\r",
+							"                        \"bookingdates\": {\r",
+							"                            \"type\": \"object\",\r",
+							"                            \"required\": [\"checkin\", \"checkout\"],\r",
+							"                            \"properties\": {\r",
+							"                                \"checkin\": { \"type\": \"string\" },\r",
+							"                                \"checkout\": { \"type\": \"string\" }\r",
+							"                            }\r",
+							"                        },\r",
+							"                        \"additionalneeds\": { \"type\": \"string\" }\r",
+							"                    }\r",
+							"                }\r",
+							"            }\r",
+							"        };\r",
+							"\r",
+							"        pm.test('Schema is valid', function () {\r",
+							"            let validate = ajv.compile(schema);\r",
+							"            let isValid = validate(jsonData);\r",
+							"            pm.expect(isValid, JSON.stringify(validate.errors)).to.be.true;\r",
+							"        });\r",
+							"\r",
+							"        pm.environment.set(\"bookingId\", jsonData.bookingid);\r",
+							"        pm.environment.set(\"firstName\", jsonReq.firstname);\r",
+							"        pm.environment.set(\"lastName\", jsonReq.lastname);\r",
+							"        pm.environment.set(\"price\", jsonReq.totalprice);\r",
+							"        pm.environment.set(\"checkIn\", jsonReq.bookingdates.checkin);\r",
+							"        pm.environment.set(\"checkOut\", jsonReq.bookingdates.checkout);\r",
+							"        pm.environment.set(\"additionalNeeds\", jsonReq.additionalneeds);\r",
+							"\r",
+							"    } catch (e) {\r",
+							"        console.log(\"Response is not JSON:\", pm.response.body);\r",
+							"        pm.expect.fail(\"Response is not valid JSON\");\r",
+							"    }\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{authToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"firstname\": \"{{$randomFirstName}}\",\r\n    \"lastname\": \"{{$randomLastName}}\",\r\n    \"totalprice\": {{$randomPrice}},\r\n    \"depositpaid\": true,\r\n    \"bookingdates\": {\r\n        \"checkin\": \"{{currentDay}}\",\r\n        \"checkout\": \"{{nextDay}}\"\r\n    },\r\n    \"additionalneeds\": \"Breakfast\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/booking/{{bookingId}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"booking",
+						"{{bookingId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Partial edit of booking",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Set environment variables\", function () {\r",
+							"    let jsonReq = JSON.parse(pm.request.body.raw);\r",
+							"    pm.environment.set(\"firstName\", jsonReq.firstname);\r",
+							"    pm.environment.set(\"lastName\", jsonReq.lastname);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Successfully updated entity\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"    \r",
+							"    try {\r",
+							"        var jsonData = pm.response.json();\r",
+							"        \r",
+							"        // Validate that the updated entity matches the expected values from the environment variables\r",
+							"        pm.expect(jsonData.firstname).to.eql(pm.environment.get(\"firstName\"));\r",
+							"        pm.expect(jsonData.lastname).to.eql(pm.environment.get(\"lastName\"));\r",
+							"    } catch (e) {\r",
+							"        console.log(\"Error parsing response:\", pm.response.body);\r",
+							"        pm.expect.fail(\"Response is not valid JSON\");\r",
+							"    }\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{authToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"firstname\": \"{{$randomFirstName}}\",\r\n    \"lastname\": \"{{$randomLastName}}\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/booking/{{bookingId}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"booking",
+						"{{bookingId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete booking",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Booking should be deleted\", function () {\r",
+							"    pm.response.to.have.status(201);\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "{{authToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/booking/{{bookingId}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"booking",
+						"{{bookingId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Verify deleted booking",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Entity no longer exists\", function () {\r",
+							"    pm.response.to.have.status(404);\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "{{authToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/booking/{{bookingId}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"booking",
+						"{{bookingId}}"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
